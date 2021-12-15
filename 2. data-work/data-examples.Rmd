@@ -1,0 +1,151 @@
+---
+title: "data-examples"
+author: "Ishan Bhatt"
+date: "12/14/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = T)
+library(tidyverse)
+library(KRLS)
+library(scales)
+library(plot.matrix)
+library(expm)
+library(diffusionMap)
+library(gridExtra)
+library(ggExtra)
+library(dimRed)
+library(energy)
+library(scatterplot3d)
+library(plotly)
+library(princurve)
+load("midterm.Rdata")
+myColorRamp <- function(colors, values) {
+    v <- (values - min(values))/diff(range(values))
+    x <- colorRamp(colors)(v)
+    rgb(x[,1], x[,2], x[,3], maxColorValue = 255)
+}
+```
+
+## Figure 1
+
+```{r}
+
+size = 250
+increment = .3
+group1 <- tibble(
+  x = runif(size, min = increment, max = 1),
+  y = runif(size, min = increment, max = 1),
+  quad = 1
+)
+
+group2 <- tibble(
+  x = runif(size, min = -1, max = -increment),
+  y = runif(size, min = increment, max = 1),
+  quad = 2
+)
+
+group3 <- tibble(
+  x= runif(size, min = -1, max = -increment),
+  y= runif(size, min = -1, max = -increment),
+  quad = 3
+)
+
+group4 <- tibble(
+  x = runif(size, min = increment, max = 1),
+  y = runif(size, min = -1, max = -increment),
+  quad = 4
+)
+
+dataset <- rbind(group1, group2, group3, group4)
+
+```
+
+```{r}
+
+D = dist(as.matrix(dataset))
+K = gausskernel(D, sigma = 4)
+P = apply(K, 1, rescale)
+
+```
+
+
+```{r, warning = F}
+
+plot1 <- heatmap(P %^% 1, Rowv = NA, Colv = NA, cexRow = NA, cexCol = NA)
+plot2 <- heatmap(P %^% 10, Rowv = NA, Colv = NA, cexRow = NA, cexCol = NA)
+plot3 <- heatmap(P %^% 100, Rowv = NA, Colv = NA, cexRow = NA, cexCol = NA)
+plot4 <- heatmap(P %^% 1000, Rowv = NA, Colv = NA, cexRow = NA, cexCol = NA)
+
+```
+
+## Figure 2-5 (Washer)
+
+```{r}
+
+N <- 10000
+washer <- matrix(NA, nrow =N, ncol = 2)
+for (n in 1:N){
+  r <- runif(1,min=5,max = 10); 
+  a = runif(1,min = 0, max = 2*pi); 
+  washer[n,] <- r*c(cos(a),
+                    sin(a)) + c(20,0)
+}
+
+washer3 <- cbind(washer, washer[,2]^2)
+
+washer.swiss <- washer3
+for (n in 1:dim(washer3)[1] ){
+  washer.swiss[n,] <- c( washer[n,1]*cos(washer[n,1]) + rnorm(1, mean=0, sd=1), 
+                         washer[n,2] + rnorm(1, mean=0, sd=1), 
+                         washer[n,1]*sin(washer[n,1] ) + rnorm(1, mean=0, sd=1)) 
+}
+
+scatterplot3d(washer3,
+              color = myColorRamp(c("red","purple","blue","green","yellow"), washer[,1]),
+              xlab = expression(x[1]), ylab = expression(x[2]), zlab = expression(x[3]),
+              cex.symbols  = 0.1
+)
+
+```
+
+```{r}
+
+D <- dist(washer3)
+dmapt1 <- diffuse(D)
+
+```
+
+```{r}
+
+plot(dmap$X[,1],
+     rep(0, length(dmap$X[,1])),
+     col = myColorRamp(c("red","purple","blue","green","yellow"), washer[,1]))
+
+plot(dmap$X[,1],
+     dmap$X[,2],
+     col = myColorRamp(c("red","purple","blue","green","yellow"), washer[,1]))
+
+```
+
+
+```{r}
+
+pca <- princomp(washer3)
+
+plot(pca$scores[,1],
+     rep(0, length(pca$scores[,1])),
+     col = myColorRamp(c("red","purple","blue","green","yellow"), washer[,1]))
+
+plot(pca$scores[,1],
+     pca$scores[,2],
+     col = myColorRamp(c("red","purple","blue","green","yellow"), washer[,1]))
+
+```
+
+
+
+
+
+
